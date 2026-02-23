@@ -1,11 +1,11 @@
-# Email to ClickUp – AI Action Item Agent
+# Email to Asana – AI Action Item Agent
 
-An n8n workflow that reads incoming emails, uses an AI agent to extract action items, and automatically creates tasks in ClickUp under the **Interior Design Projects** space.
+An n8n workflow that reads incoming emails, uses an AI agent to extract action items, and automatically creates tasks in Asana under the **Interior Design Projects** project.
 
 ## Workflow Overview
 
 ```
-New Email (IMAP) → AI Agent (extract action items) → Parse → ClickUp Task
+New Email (IMAP) → AI Agent (extract action items) → Parse → Asana Task
 ```
 
 ### Nodes
@@ -17,7 +17,7 @@ New Email (IMAP) → AI Agent (extract action items) → Parse → ClickUp Task
 | **Parse Action Items** | Parses the AI response into structured task data |
 | **Has Action Items?** | Routes based on whether actions were found |
 | **Split Into Individual Tasks** | Splits multiple action items into individual items |
-| **Create ClickUp Task** | Creates a task in ClickUp with title, description, and priority |
+| **Create Asana Task** | Creates a task in Asana with title, description, and notes |
 
 ## Setup
 
@@ -27,7 +27,7 @@ New Email (IMAP) → AI Agent (extract action items) → Parse → ClickUp Task
 - n8n API key (Settings → API → Create API Key)
 - IMAP email account credentials
 - OpenAI API key
-- ClickUp API token
+- Asana Personal Access Token
 
 ### 1. Set Environment Variables
 
@@ -54,15 +54,14 @@ After the workflow is created, open it in the n8n UI and configure:
 
 1. **IMAP Email** – click the "New Email Trigger" node and add your email credentials
 2. **OpenAI** – click the "OpenAI Chat Model" node and add your API key
-3. **ClickUp** – click the "Create ClickUp Task" node, add your API token, and set the List ID for your Interior Design Projects space
+3. **Asana** – click the "Create Asana Task" node, add your Personal Access Token, and set the Workspace and Project for your Interior Design Projects
 
-#### Finding your ClickUp List ID
+#### Finding your Asana Project ID
 
-1. Open ClickUp → navigate to your **Interior Design Projects** space
-2. Open the List where tasks should be created
-3. Click `...` → **Copy Link**
-4. The number at the end of the URL is the List ID
+1. Open Asana → navigate to your **Interior Design Projects** project
+2. Look at the URL in your browser (e.g. `https://app.asana.com/0/PROJECT_ID/...`)
+3. The number after `/0/` is your Project ID
 
 ### 4. Activate
 
-Once credentials are configured, activate the workflow in n8n. It will begin monitoring your inbox for new emails and creating ClickUp tasks for any action items found.
+Once credentials are configured, activate the workflow in n8n. It will begin monitoring your inbox for new emails and creating Asana tasks for any action items found.

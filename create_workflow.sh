@@ -4,7 +4,7 @@
 # The workflow:
 #   1. Triggers on new emails (IMAP)
 #   2. Uses an AI Agent to extract action items
-#   3. Creates ClickUp tasks in the "Interior Design Projects" space
+#   3. Creates Asana tasks in the "Interior Design Projects" project
 #
 # Required environment variables (set them before running):
 #   N8N_API_URL      – Base URL of your n8n instance  (e.g. https://your-n8n.example.com)
@@ -14,7 +14,7 @@
 # inside n8n for:
 #   - IMAP (email)
 #   - OpenAI (for the AI agent)
-#   - ClickUp API
+#   - Asana API
 #
 # Usage:
 #   export N8N_API_URL="https://your-n8n.example.com"
@@ -32,7 +32,7 @@ N8N_API_URL="${N8N_API_URL%/}"
 
 WORKFLOW_PAYLOAD=$(cat <<'ENDJSON'
 {
-  "name": "Email to ClickUp – Interior Design Action Items",
+  "name": "Email to Asana – Interior Design Action Items",
   "nodes": [
     {
       "parameters": {
@@ -131,19 +131,21 @@ WORKFLOW_PAYLOAD=$(cat <<'ENDJSON'
     },
     {
       "parameters": {
-        "list": "={{ $json.clickup_list_id || '' }}",
-        "taskName": "={{ $json.title }}",
-        "additionalFields": {
-          "content": "={{ $json.description }}\n\n---\nAuto-created from email by n8n AI Agent",
-          "priority": "={{ $json.priority }}"
+        "resource": "task",
+        "operation": "create",
+        "workspace": "={{ $json.asana_workspace_id || '' }}",
+        "project": "={{ $json.asana_project_id || '' }}",
+        "name": "={{ $json.title }}",
+        "otherProperties": {
+          "notes": "={{ $json.description }}\n\n---\nAuto-created from email by n8n AI Agent"
         }
       },
-      "id": "clickup-create-task",
-      "name": "Create ClickUp Task",
-      "type": "n8n-nodes-base.clickUp",
+      "id": "asana-create-task",
+      "name": "Create Asana Task",
+      "type": "n8n-nodes-base.asana",
       "typeVersion": 1,
       "position": [1480, 200],
-      "notes": "Configure the List ID for Interior Design Projects in ClickUp"
+      "notes": "Configure the Workspace and Project for Interior Design Projects in Asana"
     },
     {
       "parameters": {},
@@ -221,7 +223,7 @@ WORKFLOW_PAYLOAD=$(cat <<'ENDJSON'
       "main": [
         [
           {
-            "node": "Create ClickUp Task",
+            "node": "Create Asana Task",
             "type": "main",
             "index": 0
           }
@@ -298,12 +300,12 @@ if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
   echo "   - Click 'OpenAI Chat Model' node"
   echo "   - Add your OpenAI API key"
   echo ""
-  echo "3. ClickUp credentials & List ID:"
-  echo "   - Click 'Create ClickUp Task' node"
-  echo "   - Add your ClickUp API token"
-  echo "   - Set the List ID for your 'Interior Design Projects' space"
-  echo "   - To find your List ID: ClickUp > Space > Folder > List > ... > Copy Link"
-  echo "     The number at the end of the URL is the List ID"
+  echo "3. Asana credentials & Project:"
+  echo "   - Click 'Create Asana Task' node"
+  echo "   - Add your Asana Personal Access Token"
+  echo "   - Set the Workspace and Project for 'Interior Design Projects'"
+  echo "   - To find IDs: Asana > Project > copy the project URL"
+  echo "     The number in the URL is the Project ID"
   echo ""
   echo "Workflow URL: ${N8N_API_URL}/workflow/${WORKFLOW_ID}"
 else

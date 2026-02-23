@@ -2,8 +2,8 @@
 """
 Creates an n8n workflow via the n8n REST API.
 
-Workflow: Email → AI Agent (extract action items) → ClickUp Task Creation
-Target ClickUp space: Interior Design Projects
+Workflow: Email → AI Agent (extract action items) → Asana Task Creation
+Target Asana project: Interior Design Projects
 
 Usage:
     export N8N_API_URL="https://your-n8n.example.com"
@@ -13,7 +13,7 @@ Usage:
 After creating the workflow, open it in n8n to configure:
   1. IMAP email credentials
   2. OpenAI API credentials (for the AI agent)
-  3. ClickUp API credentials and List ID
+  3. Asana API credentials, Workspace ID, and Project ID
 """
 
 import json
@@ -33,7 +33,7 @@ def get_env(name: str) -> str:
 
 
 WORKFLOW_DEFINITION = {
-    "name": "Email to ClickUp – Interior Design Action Items",
+    "name": "Email to Asana – Interior Design Action Items",
     "nodes": [
         {
             "parameters": {
@@ -168,19 +168,21 @@ WORKFLOW_DEFINITION = {
         },
         {
             "parameters": {
-                "list": "={{ $json.clickup_list_id || '' }}",
-                "taskName": "={{ $json.title }}",
-                "additionalFields": {
-                    "content": (
+                "resource": "task",
+                "operation": "create",
+                "workspace": "={{ $json.asana_workspace_id || '' }}",
+                "project": "={{ $json.asana_project_id || '' }}",
+                "name": "={{ $json.title }}",
+                "otherProperties": {
+                    "notes": (
                         "={{ $json.description }}\n\n---\n"
                         "Auto-created from email by n8n AI Agent"
                     ),
-                    "priority": "={{ $json.priority }}",
                 },
             },
-            "id": "clickup-create-task",
-            "name": "Create ClickUp Task",
-            "type": "n8n-nodes-base.clickUp",
+            "id": "asana-create-task",
+            "name": "Create Asana Task",
+            "type": "n8n-nodes-base.asana",
             "typeVersion": 1,
             "position": [1480, 200],
         },
@@ -260,7 +262,7 @@ WORKFLOW_DEFINITION = {
             "main": [
                 [
                     {
-                        "node": "Create ClickUp Task",
+                        "node": "Create Asana Task",
                         "type": "main",
                         "index": 0,
                     }
@@ -351,12 +353,12 @@ Open the workflow in n8n and configure:
    - Click 'OpenAI Chat Model' node
    - Add your OpenAI API key
 
-3. ClickUp credentials & List ID:
-   - Click 'Create ClickUp Task' node
-   - Add your ClickUp API token
-   - Set the List ID for 'Interior Design Projects' space
-   - To find your List ID: ClickUp > Space > Folder > List > ... > Copy Link
-     The number at the end of the URL is the List ID
+3. Asana credentials & Project:
+   - Click 'Create Asana Task' node
+   - Add your Asana Personal Access Token
+   - Set the Workspace and Project for 'Interior Design Projects'
+   - To find IDs: Asana > Project > copy the project URL
+     The number in the URL is the Project ID
 """)
     print(f"Workflow URL: {n8n_url}/workflow/{workflow_id}")
 

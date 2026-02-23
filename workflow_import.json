@@ -1,5 +1,5 @@
 {
-  "name": "Email to ClickUp – Interior Design Action Items",
+  "name": "Email to Asana – Interior Design Action Items",
   "nodes": [
     {
       "parameters": {
@@ -98,18 +98,21 @@
     },
     {
       "parameters": {
-        "list": "={{ $json.clickup_list_id || '' }}",
-        "taskName": "={{ $json.title }}",
-        "additionalFields": {
-          "content": "={{ $json.description }}\n\n---\nAuto-created from email by n8n AI Agent",
-          "priority": "={{ $json.priority }}"
+        "resource": "task",
+        "operation": "create",
+        "workspace": "={{ $json.asana_workspace_id || '' }}",
+        "project": "={{ $json.asana_project_id || '' }}",
+        "name": "={{ $json.title }}",
+        "otherProperties": {
+          "notes": "={{ $json.description }}\n\n---\nAuto-created from email by n8n AI Agent"
         }
       },
-      "id": "clickup-create-task",
-      "name": "Create ClickUp Task",
-      "type": "n8n-nodes-base.clickUp",
+      "id": "asana-create-task",
+      "name": "Create Asana Task",
+      "type": "n8n-nodes-base.asana",
       "typeVersion": 1,
-      "position": [1480, 200]
+      "position": [1480, 200],
+      "notes": "Configure the Workspace and Project for Interior Design Projects in Asana"
     },
     {
       "parameters": {},
@@ -187,7 +190,7 @@
       "main": [
         [
           {
-            "node": "Create ClickUp Task",
+            "node": "Create Asana Task",
             "type": "main",
             "index": 0
           }

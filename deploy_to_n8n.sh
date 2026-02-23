@@ -29,7 +29,7 @@ if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
   echo "Next steps — configure credentials in each node:"
   echo "  1. New Email Trigger  → IMAP credentials"
   echo "  2. OpenAI Chat Model  → OpenAI API key"
-  echo "  3. Create ClickUp Task → ClickUp API token + List ID"
+  echo "  3. Create Asana Task → Asana Personal Access Token + Workspace/Project"
 else
   echo "ERROR (HTTP ${HTTP_CODE}): ${BODY}"
   exit 1
