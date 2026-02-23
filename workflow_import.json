@@ -1,0 +1,203 @@
+{
+  "name": "Email to ClickUp – Interior Design Action Items",
+  "nodes": [
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "options": {
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "id": "email-trigger",
+      "name": "New Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ai-agent",
+      "name": "AI Agent – Extract Action Items",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "id": "openai-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [500, 520]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following email and extract any action items, tasks, or to-dos.\n\nFrom: {{ $json.from }}\nSubject: {{ $json.subject }}\nDate: {{ $json.date }}\n\nBody:\n{{ $json.textPlain || $json.text || $json.html }}\n\n---\n\nInstructions:\n1. Carefully read the email above.\n2. Identify every action item, task, request, or to-do mentioned.\n3. If there are NO action items, respond with EXACTLY: NO_ACTION_ITEMS\n4. If there ARE action items, respond with a JSON array where each object has:\n   - \"title\": a short, clear task title (max 100 chars)\n   - \"description\": a detailed description including relevant context from the email\n   - \"priority\": 1 (urgent), 2 (high), 3 (normal), or 4 (low)\n\nExample output when action items exist:\n[{\"title\": \"Send fabric samples to client\", \"description\": \"Client requested fabric samples for the living room redesign. Email from john@example.com on 2024-01-15.\", \"priority\": 3}]\n\nRespond ONLY with the JSON array or NO_ACTION_ITEMS. No other text."
+      },
+      "id": "ai-prompt",
+      "name": "Action Item Extraction Prompt",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [700, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI agent output\nconst agentOutput = $input.first().json.output || $input.first().json.text || '';\n\n// Check if no action items were found\nif (agentOutput.trim() === 'NO_ACTION_ITEMS' || agentOutput.trim() === '') {\n  return [{ json: { hasActions: false, actions: [] } }];\n}\n\n// Try to parse the JSON array of action items\ntry {\n  // Extract JSON from the response (handle markdown code blocks)\n  let jsonStr = agentOutput.trim();\n  const jsonMatch = jsonStr.match(/\\[[\\s\\S]*\\]/);\n  if (jsonMatch) {\n    jsonStr = jsonMatch[0];\n  }\n  \n  const actions = JSON.parse(jsonStr);\n  \n  if (!Array.isArray(actions) || actions.length === 0) {\n    return [{ json: { hasActions: false, actions: [] } }];\n  }\n  \n  return [{ json: { hasActions: true, actions: actions } }];\n} catch (e) {\n  // If parsing fails, treat the whole output as a single action item\n  return [{ json: { hasActions: true, actions: [{ title: 'Review email action item', description: agentOutput, priority: 3 }] } }];\n}\n"
+      },
+      "id": "parse-actions",
+      "name": "Parse Action Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-has-actions",
+              "leftValue": "={{ $json.hasActions }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-actions",
+      "name": "Has Action Items?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "actions",
+        "options": {}
+      },
+      "id": "split-actions",
+      "name": "Split Into Individual Tasks",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1240, 200]
+    },
+    {
+      "parameters": {
+        "list": "={{ $json.clickup_list_id || '' }}",
+        "taskName": "={{ $json.title }}",
+        "additionalFields": {
+          "content": "={{ $json.description }}\n\n---\nAuto-created from email by n8n AI Agent",
+          "priority": "={{ $json.priority }}"
+        }
+      },
+      "id": "clickup-create-task",
+      "name": "Create ClickUp Task",
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [1480, 200]
+    },
+    {
+      "parameters": {},
+      "id": "no-action",
+      "name": "No Action Needed",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1240, 420]
+    }
+  ],
+  "connections": {
+    "New Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent – Extract Action Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent – Extract Action Items": {
+      "main": [
+        [
+          {
+            "node": "Parse Action Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent – Extract Action Items",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Action Items": {
+      "main": [
+        [
+          {
+            "node": "Has Action Items?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Action Items?": {
+      "main": [
+        [
+          {
+            "node": "Split Into Individual Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Action Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Individual Tasks": {
+      "main": [
+        [
+          {
+            "node": "Create ClickUp Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}
